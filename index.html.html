@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trionex">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Trionex Import</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e0c;
+  --s1: #1a1916;
+  --s2: #222120;
+  --s3: #2d2c2a;
+  --border: #3a3835;
+  --gold: #d4a853;
+  --gold2: #f0c97a;
+  --green: #4caf82;
+  --red: #e05c5c;
+  --blue: #5c8fe0;
+  --text: #f0ede8;
+  --muted: #7a7671;
+  --light: #b8b4ae;
+  --heading: 'Syne', sans-serif;
+  --body: 'Outfit', sans-serif;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--body)}
+
+/* APP SHELL */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+
+/* HEADER */
+.app-header{
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:14px 16px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.header-brand{font-family:var(--heading);font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.header-brand span{color:var(--gold)}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-date{font-size:11px;color:var(--muted);font-weight:300}
+.notif-btn{
+  width:36px;height:36px;border-radius:10px;
+  background:var(--s2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;position:relative;
+}
+.notif-dot{
+  position:absolute;top:6px;right:6px;width:7px;height:7px;
+  background:var(--red);border-radius:50%;border:1.5px solid var(--s1);
+  display:none;
+}
+
+/* CONTENT SCROLL */
+.app-content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.page{display:none;padding:16px;padding-bottom:90px}
+.page.active{display:block}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--s1);border-top:1px solid var(--border);
+  display:flex;align-items:stretch;
+  padding-bottom:var(--safe-bottom);
+  flex-shrink:0;z-index:100;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 4px 8px;cursor:pointer;transition:all .15s;gap:4px;
+  border:none;background:transparent;color:var(--muted);
+}
+.nav-btn.active{color:var(--gold)}
+.nav-btn .nav-icon{font-size:20px;line-height:1}
+.nav-btn .nav-label{font-size:10px;font-weight:500;letter-spacing:.3px}
+.nav-scan{
+  flex:1.3;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px 4px 8px;cursor:pointer;gap:3px;border:none;background:transparent;
+}
+.scan-circle{
+  width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;margin-top:-18px;
+  box-shadow:0 4px 20px rgba(212,168,83,.4);
+}
+.nav-scan .nav-label{font-size:10px;color:var(--gold);font-weight:500}
+
+/* CARDS */
+.card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;margin-bottom:14px;
+}
+.card-head{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-family:var(--heading);font-size:14px;font-weight:700;letter-spacing:-.2px}
+.card-body{padding:16px}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;
+  padding:14px;position:relative;overflow:hidden;
+}
+.kpi-card::after{
+  content:'';position:absolute;bottom:-20px;right:-20px;
+  width:70px;height:70px;border-radius:50%;opacity:.07;
+}
+.kpi-card.gold::after{background:var(--gold)}
+.kpi-card.green::after{background:var(--green)}
+.kpi-card.red::after{background:var(--red)}
+.kpi-card.blue::after{background:var(--blue)}
+.kpi-emoji{font-size:20px;margin-bottom:8px}
+.kpi-val{font-family:var(--heading);font-size:22px;font-weight:800;line-height:1}
+.kpi-val.gold{color:var(--gold)}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-val.blue{color:var(--blue)}
+.kpi-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-weight:300}
+.kpi-sub{font-size:10px;color:var(--border);margin-top:2px}
+
+/* SECTION TITLE */
+.sec-title{
+  font-family:var(--heading);font-size:13px;font-weight:700;
+  color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:10px;margin-top:4px;
+}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 18px;border-radius:12px;border:none;
+  font-family:var(--body);font-size:14px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1400;font-weight:600}
+.btn-gold:active{transform:scale(.97)}
+.btn-ghost{background:var(--s2);color:var(--light);border:1px solid var(--border)}
+.btn-ghost:active{background:var(--s3)}
+.btn-green{background:rgba(76,175,130,.15);color:var(--green);border:1px solid rgba(76,175,130,.3)}
+.btn-red{background:rgba(224,92,92,.12);color:var(--red);border:1px solid rgba(224,92,92,.25)}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:9px}
+.btn-full{width:100%}
+.btn-icon{width:36px;height:36px;padding:0;border-radius:10px}
+
+/* FORMS */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{margin-bottom:12px}
+.form-group label{
+  display:block;font-size:11px;color:var(--muted);
+  margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;font-weight:500;
+}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;background:var(--s2);border:1.5px solid var(--border);
+  border-radius:11px;padding:11px 13px;color:var(--text);
+  font-family:var(--body);font-size:15px;transition:border .15s;
+  -webkit-appearance:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+  outline:none;border-color:var(--gold);
+}
+.form-group textarea{resize:vertical;min-height:70px}
+.form-note{
+  font-size:12px;color:var(--muted);
+  background:var(--s2);border-radius:10px;padding:10px 12px;
+  margin-bottom:12px;border-left:3px solid var(--gold);
+}
+.calc-result{
+  background:rgba(212,168,83,.08);border:1px solid rgba(212,168,83,.2);
+  border-radius:11px;padding:12px 14px;margin-bottom:12px;
+}
+.calc-result .row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.calc-result .total-row{
+  display:flex;justify-content:space-between;font-weight:700;
+  border-top:1px solid rgba(212,168,83,.2);margin-top:6px;padding-top:8px;
+}
+
+/* LISTS */
+.item-list{display:flex;flex-direction:column;gap:10px}
+.list-item{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:border-color .15s;
+}
+.list-item:active{border-color:var(--gold);background:var(--s3)}
+.item-img{
+  width:48px;height:48px;border-radius:10px;object-fit:cover;
+  background:var(--s3);display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;overflow:hidden;
+}
+.item-img img{width:100%;height:100%;object-fit:cover}
+.item-info{flex:1;min-width:0}
+.item-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.item-right{text-align:right;flex-shrink:0}
+.item-price{font-family:var(--heading);font-size:15px;font-weight:700;color:var(--gold)}
+.item-stock{font-size:11px;margin-top:2px}
+
+/* BADGE */
+.badge{
+  display:inline-block;padding:3px 9px;border-radius:20px;
+  font-size:11px;font-weight:500;
+}
+.b-gold{background:rgba(212,168,83,.15);color:var(--gold)}
+.b-green{background:rgba(76,175,130,.15);color:var(--green)}
+.b-red{background:rgba(224,92,92,.15);color:var(--red)}
+.b-blue{background:rgba(92,143,224,.15);color:var(--blue)}
+.b-muted{background:var(--s3);color:var(--muted)}
+
+/* CHART */
+.chart-wrap{overflow-x:auto;padding-bottom:4px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:110px;min-width:280px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:36px}
+.bar-fill{width:100%;border-radius:6px 6px 0 0;transition:height .3s ease;min-height:4px}
+.bar-val{font-size:9px;color:var(--muted);font-weight:500}
+.bar-lbl{font-size:9px;color:var(--muted)}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:16px;padding:4px 0}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:8px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* SCANNER */
+#scanner-overlay{
+  display:none;position:fixed;inset:0;background:#000;z-index:200;
+  flex-direction:column;
+}
+#scanner-overlay.open{display:flex}
+#scanner-video-wrap{
+  flex:1;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+#scanner-video-wrap video{width:100%;height:100%;object-fit:cover}
+.scan-frame{
+  position:absolute;width:260px;height:160px;
+  border:2px solid var(--gold);border-radius:12px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
+}
+.scan-line{
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:scanline 2s linear infinite;
+}
+@keyframes scanline{0%{top:0}100%{top:100%}}
+.scan-corners::before,.scan-corners::after{
+  content:'';position:absolute;width:20px;height:20px;border-color:var(--gold2);border-style:solid;
+}
+.scan-corners::before{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.scan-corners::after{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.scan-ui{
+  padding:20px;background:var(--s1);border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:10px;
+}
+.scan-status{
+  text-align:center;font-size:13px;color:var(--muted);
+  background:var(--s2);border-radius:10px;padding:10px;
+}
+.scan-manual{display:flex;gap:8px}
+.scan-manual input{
+  flex:1;background:var(--s2);border:1.5px solid var(--border);
+  border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;
+}
+
+/* MODAL */
+.modal-wrap{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:150;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-wrap.open{display:flex}
+.modal{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:22px 22px 0 0;width:100%;max-width:600px;
+  max-height:92vh;overflow-y:auto;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{
+  width:40px;height:4px;background:var(--border);border-radius:2px;
+  margin:12px auto 0;
+}
+.modal-header{padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:var(--heading);font-size:17px;font-weight:700}
+.modal-body{padding:18px 18px 32px}
+
+/* ALERT TOAST */
+#toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:var(--s3);border:1px solid var(--border);border-radius:12px;
+  padding:10px 18px;font-size:13px;font-weight:500;
+  opacity:0;transition:all .25s;z-index:300;white-space:nowrap;
+  pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.success{border-color:rgba(76,175,130,.4);color:var(--green)}
+#toast.error{border-color:rgba(224,92,92,.4);color:var(--red)}
+
+/* STOCK ALERT CARD */
+.alert-card{
+  background:rgba(224,92,92,.07);border:1px solid rgba(224,92,92,.2);
+  border-radius:14px;padding:14px;margin-bottom:10px;
+}
+.alert-title{font-weight:600;font-size:13px;color:var(--red);margin-bottom:8px}
+.alert-item{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(224,92,92,.1)}
+.alert-item:last-child{border-bottom:none}
+.wa-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.25);
+  color:#25d166;border-radius:11px;padding:10px;
+  font-size:13px;font-weight:500;cursor:pointer;margin-top:10px;width:100%;
+}
+
+/* PHOTO INPUT */
+.photo-input-wrap{
+  border:2px dashed var(--border);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;cursor:pointer;gap:8px;transition:border-color .15s;position:relative;
+}
+.photo-input-wrap:hover{border-color:var(--gold)}
+.photo-input-wrap input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-preview{
+  width:100%;height:120px;border-radius:10px;
+  object-fit:cover;display:none;
+}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+/* QUICK ACTIONS */
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.quick-btn{
+  background:var(--s2);border:1px solid var(--border);border-radius:14px;
+  padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;transition:all .15s;
+}
+.quick-btn:active{background:var(--s3);border-color:var(--gold)}
+.quick-btn .icon{font-size:24px}
+.quick-btn .label{font-size:11px;color:var(--light);font-weight:500;text-align:center;line-height:1.2}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty .icon{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* SCROLL UTILITY */
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* SETUP STEPS */
+.setup-step{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+}
+.step-head{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;cursor:pointer;
+}
+.step-head:hover{background:var(--s3)}
+.step-num{
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:#1a1400;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.step-title{flex:1;font-size:13px;font-weight:500}
+.step-arrow{color:var(--muted);font-size:18px;transition:transform .2s}
+.step-arrow.open{transform:rotate(90deg)}
+.step-body{
+  padding:0 14px 14px;
+  display:flex;flex-direction:column;gap:8px;
+  font-size:12px;color:var(--light);line-height:1.7;
+  border-top:1px solid var(--border);
+}
+.step-body strong{color:var(--text)}
+.btn-blue{background:rgba(92,143,224,.15);color:var(--blue);border:1px solid rgba(92,143,224,.3)}
+
+/* RESPONSIVE GRID */
+@media(min-width:600px){
+  .kpi-row{grid-template-columns:repeat(4,1fr)}
+  .quick-grid{grid-template-columns:repeat(6,1fr)}
+  .page{padding:20px;max-width:800px;margin:0 auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- LOGIN SCREEN -->
+<!-- ═══════════════════════════════════════ -->
+<div id="login-screen" style="
+  position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;
+">
+  <!-- Logo -->
+  <div style="text-align:center;margin-bottom:36px">
+    <div id="login-logo-wrap" style="width:88px;height:88px;border-radius:20px;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;overflow:hidden">
+      <span style="font-size:40px">✈️</span>
+    </div>
+    <div style="font-family:var(--heading);font-size:28px;font-weight:800;letter-spacing:-0.5px">TRIONEX</div>
+    <div style="font-family:var(--heading);font-size:12px;font-weight:400;letter-spacing:3px;color:var(--gold)">IMPORT</div>
+  </div>
+
+  <!-- User selector -->
+  <div id="user-select-view" style="width:100%;max-width:360px">
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px;letter-spacing:.5px">SELECCIONA TU PERFIL</div>
+    <div id="user-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
+    <button class="btn btn-ghost btn-full" onclick="showCreateUser()" style="font-size:13px">+ Nuevo usuario</button>
+  </div>
+
+  <!-- PIN view -->
+  <div id="pin-view" style="width:100%;max-width:320px;display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;cursor:pointer" onclick="backToUsers()">
+      <span style="color:var(--muted);font-size:20px">‹</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="pin-avatar" style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#1a1400"></div>
+        <div>
+          <div id="pin-username" style="font-weight:600;font-size:15px"></div>
+          <div style="font-size:11px;color:var(--muted)" id="pin-role"></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">Ingresa tu PIN de 4 dígitos</div>
+
+    <!-- PIN dots -->
+    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:28px" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+
+    <!-- PIN error -->
+    <div id="pin-error" style="text-align:center;font-size:13px;color:var(--red);margin-bottom:12px;min-height:20px"></div>
+
+    <!-- Keypad -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('bio')" style="font-size:22px">👆</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key" onclick="pinKey('del')" style="font-size:18px">⌫</button>
+    </div>
+  </div>
+
+  <!-- Create user view -->
+  <div id="create-user-view" style="width:100%;max-width:360px;display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;cursor:pointer" onclick="backToUsers()">
+      <span style="color:var(--muted);font-size:20px">‹</span>
+      <span style="font-size:15px;font-weight:600">Crear Usuario</span>
+    </div>
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="new-name" placeholder="Ej: Cristhian">
+    </div>
+    <div class="form-group">
+      <label>Rol</label>
+      <select id="new-role">
+        <option value="admin">Admin — acceso total</option>
+        <option value="vendedor">Vendedor — solo ventas e inventario</option>
+        <option value="viewer">Solo lectura — ver reportes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>PIN de 4 dígitos</label>
+      <input type="password" id="new-pin" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div class="form-group">
+      <label>Confirmar PIN</label>
+      <input type="password" id="new-pin2" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div id="create-error" style="font-size:12px;color:var(--red);margin-bottom:12px;min-height:16px"></div>
+    <button class="btn btn-gold btn-full" onclick="createUser()">Crear Usuario</button>
+  </div>
+</div>
+
+<style>
+.pin-dot{
+  width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--border);background:transparent;
+  transition:all .15s;
+}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold)}
+.pin-dot.error{background:var(--red);border-color:var(--red)}
+.pin-key{
+  aspect-ratio:1;border-radius:50%;background:var(--s2);
+  border:1px solid var(--border);color:var(--text);
+  font-family:var(--heading);font-size:22px;font-weight:600;
+  cursor:pointer;transition:all .1s;display:flex;
+  align-items:center;justify-content:center;
+  width:100%;padding:0;
+}
+.pin-key:active{background:var(--gold);color:#1a1400;transform:scale(.93)}
+.user-card{
+  background:var(--s2);border:1.5px solid var(--border);
+  border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:all .15s;
+}
+.user-card:active{border-color:var(--gold);background:var(--s3)}
+.user-avatar{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:#1a1400;flex-shrink:0;
+}
+</style>
+
+<div id="app">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand" style="display:flex;align-items:center;gap:10px">
+      <img src="data:image/jpeg;base64,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1525723r2qbW/wC+a9+eqmnKVINJU999qq99+K2Ad9+8+298++/aO++++2299e+9989N1899qq99+qKa98W8+299eW+9268q6dO18yu289898998+q89y++289WdqW8869y9t22uu98WmO+m09898988+O99+i8+uu+29eSWcsu88+dO2eiOyc4yq9989899989999999889988899999999999989999998888898999q9ae429Sia9iea9ui29G2S998898888988999894W86qy+9q+u929+Uu+29dCt99899989899999999tWlae2u9qW98C9+d+W+99K989998988999999998t+t+DcOd+e99cGu9+Ouf9ed98999999999999V5998p899N59999d99999999898998989988999t91091Zcc999d8945999999999998999999999598158x5YZI855hl98xc98Fst99888988999999sY09tJRlElJJYZtc9M9B09M9t8998998989999990xQt4hVx10BJFk945t91Rd999599999998999985JFwhhBwBBBQJdI1x9V9h1Z991Z9899999999999tBBBQABEpABoBBRABRFx1VJV5dF9999998989999pBBBBJBBBBBBBBBJBBBJZNBBlFJ911dFs9959999oQJABBBBBABBhBBBBFglhRx9V8Fx5sx989998999/8QANREAAQMCAwQIBQMFAAAAAAAAAQIDBAARBRIhECIxURMgQEFQYXGhMDKBkdEjgPAzYHCxwf/aAAgBAgEBPwD9hhNtTUjF2m91sX/1Rxd8nS1Qn3H2ukcFu1m9tKlvSc+/cGmsTkN99/WmsZSfnR9qamsPfIvqyJTccXcVUqc7I0Og5bIMFUg3OiaAAFh2x1pLwyOC4qThBTvM6+VLQUGx2NSXWv6a7U1jLo+dN/amsWYV82lSsUSgWZ1PtTjinTnWbmgCo2FQ8Jtvvfb80EhIsO3yIrUgWcFScMdZ1b1Hv1Y0NySbJ4c6iwmow048/A8UVHJskb3l/wB6kVvo2UI8u33y7VrCBmUdKm4qXNxjQc9jcR1aC4BoNjSM7gRzPgE+C4+cyT9K6V+MclyKbxZ9PGxqTMclHf4cqaZcfOVsXqLhLbWrup9qkJuytHkdkBGa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" style="height:36px;width:36px;border-radius:8px;object-fit:cover">
+      <div>
+        <div style="font-family:var(--heading);font-size:16px;font-weight:800;letter-spacing:0px;line-height:1">TRIONEX</div>
+        <div style="font-family:var(--heading);font-size:10px;font-weight:400;letter-spacing:2px;color:var(--gold);line-height:1">IMPORT</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-date" id="hDate"></div>
+      <div class="notif-btn" onclick="showPage('alertas')">
+        🔔<div class="notif-dot" id="notifDot"></div>
+      </div>
+      <div class="notif-btn" id="header-avatar" onclick="openModal('perfil')" style="font-size:15px;font-weight:700;color:var(--gold);background:rgba(212,168,83,.12);border-color:rgba(212,168,83,.3)">C</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="app-content" id="appContent">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div id="page-dashboard" class="page active">
+      <div class="kpi-row">
+        <div class="kpi-card gold">
+          <div class="kpi-emoji">💰</div>
+          <div class="kpi-val gold" id="kpi-ventas">S/ 0</div>
+          <div class="kpi-lbl">Ventas del mes</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-emoji">📈</div>
+          <div class="kpi-val green" id="kpi-ganancia">S/ 0</div>
+          <div class="kpi-lbl">Ganancia neta</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-emoji">🧾</div>
+          <div class="kpi-val red" id="kpi-gastos">S/ 0</div>
+          <div class="kpi-lbl">Gastos del mes</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-emoji">📦</div>
+          <div class="kpi-val blue" id="kpi-stock">0</div>
+          <div class="kpi-lbl">Unid. en stock</div>
+        </div>
+      </div>
+
+      <div class="sec-title">Acciones rápidas</div>
+      <div class="quick-grid">
+        <div class="quick-btn" onclick="openModal('venta')">
+          <div class="icon">💰</div><div class="label">Nueva Venta</div>
+        </div>
+        <div class="quick-btn" onclick="openModal('gasto')">
+          <div class="icon">🧾</div><div class="label">Gasto</div>
+        </div>
+        <div class="quick-btn" onclick="openModal('compra')">
+          <div class="icon">🛒</div><div class="label">Compra</div>
+        </div>
+        <div class="quick-btn" onclick="openModal('pedido')">
+          <div class="icon">📱</div><div class="label">Pedido iPhone</div>
+        </div>
+        <div class="quick-btn" onclick="openModal('producto')">
+          <div class="icon">📦</div><div class="label">Producto</div>
+        </div>
+        <div class="quick-btn" onclick="showPage('alertas')">
+          <div class="icon">🔔</div><div class="label">Alertas</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">📊 Ventas por categoría</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <div class="bar-chart" id="chart-cats"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">🕐 Últimas ventas</div>
+        </div>
+        <div class="item-list" id="dash-ventas" style="padding:0 0 4px"></div>
+      </div>
+    </div>
+
+    <!-- ═══ INVENTARIO ═══ -->
+    <div id="page-inventario" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="sec-title" style="margin:0">Inventario</div>
+        <button class="btn btn-gold btn-sm" onclick="openModal('producto')">+ Producto</button>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <input type="search" id="inv-search" placeholder="🔍  Buscar producto..." oninput="renderInventario()">
+      </div>
+      <div class="item-list" id="inv-list">
+        <div class="empty"><div class="icon">📦</div><p>Sin productos. Agrega uno o escanea el código de barras.</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ VENTAS ═══ -->
+    <div id="page-ventas" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="sec-title" style="margin:0">Ventas</div>
+        <button class="btn btn-gold btn-sm" onclick="openModal('venta')">+ Venta</button>
+      </div>
+      <div class="item-list" id="ventas-list">
+        <div class="empty"><div class="icon">💰</div><p>Sin ventas registradas aún.</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ REPORTES ═══ -->
+    <div id="page-reportes" class="page">
+      <div class="sec-title">Estado de Resultados</div>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <select id="rep-mes" onchange="calcResultados()" style="flex:1;background:var(--s2);border:1.5px solid var(--border);border-radius:11px;padding:10px 12px;color:var(--text);font-size:14px">
+          <option value="0">Enero</option><option value="1">Febrero</option>
+          <option value="2">Marzo</option><option value="3">Abril</option>
+          <option value="4">Mayo</option><option value="5">Junio</option>
+          <option value="6">Julio</option><option value="7">Agosto</option>
+          <option value="8">Septiembre</option><option value="9">Octubre</option>
+          <option value="10">Noviembre</option><option value="11">Diciembre</option>
+        </select>
+        <select id="rep-anio" onchange="calcResultados()" style="background:var(--s2);border:1.5px solid var(--border);border-radius:11px;padding:10px 12px;color:var(--text);font-size:14px">
+          <option>2025</option><option>2024</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">📊 Resultado del Período</div></div>
+        <div class="card-body" id="er-body">
+          <div id="er-rows"></div>
+          <div class="divider"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:var(--heading);font-size:16px;font-weight:700">UTILIDAD NETA</span>
+            <span id="er-utilidad" style="font-family:var(--heading);font-size:20px;font-weight:800;color:var(--green)">S/ 0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px">
+            <span style="font-size:12px;color:var(--muted)">Margen neto</span>
+            <span id="er-margen" style="font-size:12px;color:var(--muted)">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">📈 Ventas últimos 6 meses</div></div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <div class="bar-chart" id="chart-meses"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">💵 Flujo de Caja</div></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label>Cuota banco / préstamo este mes (S/)</label>
+            <input type="number" id="cuota-banco" placeholder="0.00" oninput="calcResultados()">
+          </div>
+          <div id="flujo-rows"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">🔑 Indicadores</div></div>
+        <div class="card-body" id="indicadores-body"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ALERTAS ═══ -->
+    <div id="page-alertas" class="page">
+      <div class="sec-title">Alertas & Notificaciones</div>
+      <div id="alertas-content">
+        <div class="empty"><div class="icon">✅</div><p>Sin alertas activas.</p></div>
+      </div>
+    </div>
+
+    <!-- ═══ EXPORTAR / NUBE ═══ -->
+    <div id="page-exportar" class="page">
+      <div class="sec-title">Exportar & Nube</div>
+
+      <!-- EXPORTAR EXCEL -->
+      <div class="card" style="border-color:rgba(76,175,130,.3)">
+        <div class="card-head" style="background:rgba(76,175,130,.06)">
+          <div class="card-title">📥 Exportar a Excel / CSV</div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Descarga todos tus datos para abrirlos en Excel, Google Sheets o guardarlos como respaldo.</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-green btn-full" onclick="exportSheet('ventas')">📊 Exportar Ventas</button>
+            <button class="btn btn-green btn-full" onclick="exportSheet('inventario')">📦 Exportar Inventario</button>
+            <button class="btn btn-green btn-full" onclick="exportSheet('gastos')">🧾 Exportar Gastos</button>
+            <button class="btn btn-green btn-full" onclick="exportSheet('compras')">🛒 Exportar Compras</button>
+            <div class="divider"></div>
+            <button class="btn btn-gold btn-full" onclick="exportTodo()">⬇️ Exportar TODO (respaldo completo)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKUP JSON -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">💾 Respaldo & Restaurar</div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Guarda una copia de seguridad de todos tus datos o restaura desde un backup anterior.</p>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <button class="btn btn-ghost btn-full" onclick="exportBackup()">📤 Crear Backup JSON</button>
+            <button class="btn btn-ghost btn-full" onclick="document.getElementById('restore-file').click()">📥 Restaurar Backup</button>
+          </div>
+          <input type="file" id="restore-file" accept=".json" style="display:none" onchange="importBackup(this)">
+          <div class="form-note">💡 Guarda el backup en Google Drive o WhatsApp para tenerlo siempre disponible.</div>
+        </div>
+      </div>
+
+      <!-- SUPABASE NUBE -->
+      <div class="card" style="border-color:rgba(92,143,224,.3)">
+        <div class="card-head" style="background:rgba(92,143,224,.06)">
+          <div class="card-title">☁️ Sincronización en la Nube</div>
+        </div>
+        <div class="card-body">
+          <div style="background:rgba(212,168,83,.08);border:1px solid rgba(212,168,83,.2);border-radius:12px;padding:14px;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">¿Qué es Supabase?</div>
+            <p style="font-size:12px;color:var(--light);line-height:1.6">Es una base de datos gratuita en la nube. Con ella, todos tus dispositivos (celular, laptop, tablet) comparten los mismos datos en tiempo real. Es como Google Drive pero para tu app.</p>
+          </div>
+
+          <div class="sec-title" style="margin-top:4px">Pasos para configurar (15 min)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px" id="setup-steps">
+            <div class="setup-step" data-step="1">
+              <div class="step-head" onclick="toggleStep(1)">
+                <span class="step-num">1</span>
+                <span class="step-title">Crear cuenta gratuita en Supabase</span>
+                <span class="step-arrow">›</span>
+              </div>
+              <div class="step-body" id="step-1" style="display:none">
+                <p>1. Ve a <strong style="color:var(--gold)">supabase.com</strong></p>
+                <p>2. Clic en "Start your project" → regístrate con Google</p>
+                <p>3. Crea un nuevo proyecto → ponle nombre "trionex-import"</p>
+                <p>4. Elige la región más cercana (US East suele ser rápida)</p>
+                <p>5. Anota tu contraseña del proyecto</p>
+                <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="window.open('https://supabase.com','_blank')">🔗 Abrir Supabase</button>
+              </div>
+            </div>
+            <div class="setup-step" data-step="2">
+              <div class="step-head" onclick="toggleStep(2)">
+                <span class="step-num">2</span>
+                <span class="step-title">Obtener las credenciales de tu proyecto</span>
+                <span class="step-arrow">›</span>
+              </div>
+              <div class="step-body" id="step-2" style="display:none">
+                <p>1. Dentro de tu proyecto → clic en ⚙️ "Settings"</p>
+                <p>2. Ve a "API" en el menú lateral</p>
+                <p>3. Copia tu <strong style="color:var(--gold)">Project URL</strong></p>
+                <p>4. Copia tu <strong style="color:var(--gold)">anon public key</strong></p>
+                <p>5. Pégalos abajo en los campos de conexión</p>
+              </div>
+            </div>
+            <div class="setup-step" data-step="3">
+              <div class="step-head" onclick="toggleStep(3)">
+                <span class="step-num">3</span>
+                <span class="step-title">Crear las tablas en Supabase</span>
+                <span class="step-arrow">›</span>
+              </div>
+              <div class="step-body" id="step-3" style="display:none">
+                <p>En Supabase → ve a <strong>"SQL Editor"</strong> y ejecuta este código:</p>
+                <div style="background:var(--bg);border-radius:8px;padding:12px;margin-top:8px;font-size:11px;font-family:monospace;color:var(--gold);overflow-x:auto;white-space:pre" id="sql-code">create table ventas (id bigint primary key, data jsonb);
+create table inventario (id bigint primary key, data jsonb);
+create table gastos (id bigint primary key, data jsonb);
+create table compras (id bigint primary key, data jsonb);
+create table pedidos (id bigint primary key, data jsonb);
+
+-- Habilitar acceso público (solo para tu app)
+alter table ventas enable row level security;
+alter table inventario enable row level security;
+alter table gastos enable row level security;
+alter table compras enable row level security;
+alter table pedidos enable row level security;
+
+create policy "allow all" on ventas for all using (true) with check (true);
+create policy "allow all" on inventario for all using (true) with check (true);
+create policy "allow all" on gastos for all using (true) with check (true);
+create policy "allow all" on compras for all using (true) with check (true);
+create policy "allow all" on pedidos for all using (true) with check (true);</div>
+                <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%" onclick="copySQL()">📋 Copiar SQL</button>
+              </div>
+            </div>
+            <div class="setup-step" data-step="4">
+              <div class="step-head" onclick="toggleStep(4)">
+                <span class="step-num">4</span>
+                <span class="step-title">Conectar tu app a Supabase</span>
+                <span class="step-arrow">›</span>
+              </div>
+              <div class="step-body" id="step-4" style="display:none">
+                <p style="margin-bottom:10px">Pega tus credenciales aquí:</p>
+                <div class="form-group">
+                  <label>Project URL</label>
+                  <input type="text" id="sb-url" placeholder="https://xxxxx.supabase.co" oninput="saveSBConfig()">
+                </div>
+                <div class="form-group">
+                  <label>Anon Public Key</label>
+                  <input type="text" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIs..." oninput="saveSBConfig()">
+                </div>
+                <button class="btn btn-blue btn-full" onclick="testSupabase()" style="background:rgba(92,143,224,.15);color:var(--blue);border:1px solid rgba(92,143,224,.3)">🔌 Probar Conexión</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SYNC ACTIONS (visible after config) -->
+          <div id="sync-panel" style="display:none">
+            <div class="divider"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:13px;font-weight:600;color:var(--green)">✅ Conectado a Supabase</span>
+              <span id="sync-status" style="font-size:11px;color:var(--muted)">Sin sincronizar</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-full" style="background:rgba(92,143,224,.15);color:var(--blue);border:1px solid rgba(92,143,224,.3)" onclick="syncToCloud()">☁️ Subir datos a la nube</button>
+              <button class="btn btn-ghost btn-full" onclick="syncFromCloud()">⬇️ Descargar desde la nube</button>
+            </div>
+          </div>
+
+          <div id="no-sync-msg" style="text-align:center;padding:10px 0">
+            <p style="font-size:12px;color:var(--muted)">Configura tus credenciales en el paso 4 para activar la sincronización</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="showPage('dashboard')">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label">Inicio</div>
+    </button>
+    <button class="nav-btn" id="nav-inventario" onclick="showPage('inventario')">
+      <div class="nav-icon">📦</div>
+      <div class="nav-label">Inventario</div>
+    </button>
+    <button class="nav-scan" onclick="openScanner()">
+      <div class="scan-circle">📷</div>
+      <div class="nav-label">Escanear</div>
+    </button>
+    <button class="nav-btn" id="nav-ventas" onclick="showPage('ventas')">
+      <div class="nav-icon">💰</div>
+      <div class="nav-label">Ventas</div>
+    </button>
+    <button class="nav-btn" id="nav-reportes" onclick="showPage('reportes')">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">Reportes</div>
+    </button>
+    <button class="nav-btn" id="nav-exportar" onclick="showPage('exportar')">
+      <div class="nav-icon">☁️</div>
+      <div class="nav-label">Nube</div>
+    </button>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- SCANNER OVERLAY -->
+<!-- ═══════════════════════════════════ -->
+<div id="scanner-overlay">
+  <div id="scanner-video-wrap">
+    <div class="scan-frame scan-corners">
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  <div class="scan-ui">
+    <div class="scan-status" id="scan-status">Apunta la cámara al código de barras del producto</div>
+    <div class="scan-manual">
+      <input type="text" id="manual-barcode" placeholder="O escribe el código manualmente..." inputmode="numeric">
+      <button class="btn btn-gold" onclick="handleBarcode(document.getElementById('manual-barcode').value)">OK</button>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="closeScanner()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- MODALES -->
+<!-- ═══════════════════════════════════ -->
+
+<!-- MODAL VENTA -->
+<div class="modal-wrap" id="modal-venta">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">💰 Registrar Venta</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-note">Selecciona un producto del inventario o ingresa manualmente.</div>
+      <div class="form-group">
+        <label>Producto</label>
+        <select id="v-prod" onchange="autoFillVenta()">
+          <option value="">— Seleccionar —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio venta (S/)</label>
+          <input type="number" id="v-precio" inputmode="decimal" placeholder="0.00" oninput="calcVenta()">
+        </div>
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input type="number" id="v-cant" value="1" inputmode="numeric" oninput="calcVenta()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Costo unitario (S/)</label>
+        <input type="number" id="v-costo" inputmode="decimal" placeholder="0.00" oninput="calcVenta()">
+      </div>
+      <div class="calc-result" id="v-calc" style="display:none">
+        <div class="row"><span>Subtotal</span><span id="v-subtotal">S/ 0</span></div>
+        <div class="row"><span>Costo total</span><span id="v-costoT">S/ 0</span></div>
+        <div class="total-row"><span>Ganancia</span><span id="v-gan" style="color:var(--green)">S/ 0</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cliente</label>
+          <input type="text" id="v-cliente" placeholder="Nombre o alias">
+        </div>
+        <div class="form-group">
+          <label>Canal</label>
+          <select id="v-canal">
+            <option>Instagram</option><option>TikTok</option>
+            <option>WhatsApp</option><option>Facebook</option>
+            <option>Presencial</option><option>Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Método de pago</label>
+          <select id="v-pago">
+            <option>Yape</option><option>Plin</option>
+            <option>Efectivo</option><option>Transferencia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="v-estado">
+            <option>Completada</option><option>Pendiente pago</option>
+            <option>En camino</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('venta')">Cancelar</button>
+        <button class="btn btn-gold" style="flex:1" onclick="guardarVenta()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GASTO -->
+<div class="modal-wrap" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">🧾 Registrar Gasto</div></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="g-fecha">
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <input type="text" id="g-desc" placeholder="¿En qué se gastó?">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="g-cat">
+            <option>Publicidad / Ads</option>
+            <option>Envíos / Delivery</option>
+            <option>Comisiones</option>
+            <option>Empaques</option>
+            <option>Internet</option>
+            <option>Transporte</option>
+            <option>Otros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Monto (S/)</label>
+          <input type="number" id="g-monto" inputmode="decimal" placeholder="0.00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Pago con</label>
+          <select id="g-pago">
+            <option>Yape</option><option>Efectivo</option>
+            <option>Tarjeta</option><option>Transferencia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>¿Recurrente?</label>
+          <select id="g-rec">
+            <option value="no">No</option>
+            <option value="si">Sí, mensual</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('gasto')">Cancelar</button>
+        <button class="btn btn-gold" style="flex:1" onclick="guardarGasto()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPRA -->
+<div class="modal-wrap" id="modal-compra">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">🛒 Registrar Compra / Importación</div></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Proveedor / Tienda USA</label>
+        <input type="text" id="c-prov" placeholder="Amazon, Sephora, etc.">
+      </div>
+      <div class="form-group">
+        <label>Producto</label>
+        <select id="c-prod">
+          <option value="">— Seleccionar —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Costo unit. (USD)</label>
+          <input type="number" id="c-usd" inputmode="decimal" placeholder="0.00" oninput="calcCompra()">
+        </div>
+        <div class="form-group">
+          <label>Cantidad</label>
+          <input type="number" id="c-cant" value="1" inputmode="numeric" oninput="calcCompra()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de cambio</label>
+          <input type="number" id="c-tc" value="3.75" inputmode="decimal" oninput="calcCompra()">
+        </div>
+        <div class="form-group">
+          <label>Envío/Import. (S/)</label>
+          <input type="number" id="c-envio" placeholder="0.00" inputmode="decimal" oninput="calcCompra()">
+        </div>
+      </div>
+      <div class="calc-result">
+        <div class="row"><span>Costo en soles</span><span id="c-soles">S/ 0</span></div>
+        <div class="row"><span>+ Envío/Importación</span><span id="c-envio-s">S/ 0</span></div>
+        <div class="total-row"><span>Costo unit. final</span><span id="c-unit" style="color:var(--gold)">S/ 0</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="c-estado">
+            <option>Ordenado</option><option>En tránsito</option>
+            <option>En aduana</option><option>Recibido</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="c-fecha">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('compra')">Cancelar</button>
+        <button class="btn btn-gold" style="flex:1" onclick="guardarCompra()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRODUCTO -->
+<div class="modal-wrap" id="modal-producto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">📦 Agregar Producto</div></div>
+    <div class="modal-body">
+      <div class="photo-input-wrap" id="photo-wrap" onclick="">
+        <img id="prod-photo-preview" class="photo-preview">
+        <div id="photo-placeholder">
+          <div style="font-size:28px">📸</div>
+          <div style="font-size:12px;color:var(--muted)">Toca para agregar foto</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="prod-photo" onchange="handlePhoto(this)">
+      </div>
+      <div style="margin-top:12px">
+        <div class="form-group">
+          <label>Nombre del producto</label>
+          <input type="text" id="p-nombre" placeholder="Ej: Khamrah 100ml">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="p-cat">
+              <option>Perfumes</option><option>iPhones</option>
+              <option>Accesorios</option><option>Otros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Código de barras</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="p-barcode" placeholder="Escanear o escribir" style="flex:1">
+              <button class="btn btn-ghost btn-sm btn-icon" onclick="scanForProduct()" title="Escanear">📷</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stock actual</label>
+            <input type="number" id="p-stock" value="0" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label>Stock mínimo (alerta)</label>
+            <input type="number" id="p-stockmin" value="5" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Costo (S/)</label>
+            <input type="number" id="p-costo" inputmode="decimal" placeholder="0.00" oninput="calcMargen()">
+          </div>
+          <div class="form-group">
+            <label>Precio venta (S/)</label>
+            <input type="number" id="p-precio" inputmode="decimal" placeholder="0.00" oninput="calcMargen()">
+          </div>
+        </div>
+        <div class="calc-result" id="p-margen-wrap" style="display:none">
+          <div class="row"><span>Ganancia por unidad</span><span id="p-gan" style="color:var(--green)">S/ 0</span></div>
+          <div class="row"><span>Margen</span><span id="p-margen" style="color:var(--gold)">0%</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('producto')">Cancelar</button>
+        <button class="btn btn-gold" style="flex:1" onclick="guardarProducto()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PEDIDO -->
+<div class="modal-wrap" id="modal-pedido">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><div class="modal-title">📱 Pedido a Medida</div></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cliente</label>
+          <input type="text" id="ped-cliente" placeholder="Nombre">
+        </div>
+        <div class="form-group">
+          <label>WhatsApp</label>
+          <input type="text" id="ped-wa" placeholder="+51 9...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Producto solicitado</label>
+        <input type="text" id="ped-prod" placeholder="Ej: iPhone 15 Pro 256GB Negro">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Precio acordado (S/)</label>
+          <input type="number" id="ped-precio" inputmode="decimal" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Anticipo recibido (S/)</label>
+          <input type="number" id="ped-anticipo" inputmode="decimal" placeholder="0.00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Costo estimado (S/)</label>
+          <input type="number" id="ped-costo" inputmode="decimal" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Entrega estimada</label>
+          <input type="date" id="ped-entrega">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="ped-estado">
+          <option>Pedido recibido</option>
+          <option>Buscando producto</option>
+          <option>Comprado - en tránsito</option>
+          <option>Listo para entregar</option>
+          <option>Entregado</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('pedido')">Cancelar</button>
+        <button class="btn btn-gold" style="flex:1" onclick="guardarPedido()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE PRODUCTO -->
+<div class="modal-wrap" id="modal-detalle">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body" id="detalle-body" style="padding-top:16px"></div>
+  </div>
+</div>
+
+<!-- MODAL PERFIL -->
+<div class="modal-wrap" id="modal-perfil">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="padding-top:20px">
+      <div style="text-align:center;margin-bottom:20px">
+        <div id="profile-avatar-big" style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#1a1400;margin:0 auto 12px"></div>
+        <div id="profile-name" style="font-family:var(--heading);font-size:20px;font-weight:800"></div>
+        <div id="profile-role" style="font-size:12px;color:var(--muted);margin-top:3px"></div>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <button class="btn btn-ghost btn-full" onclick="showChangePin()">🔐 Cambiar PIN</button>
+        <div id="change-pin-wrap" style="display:none">
+          <div class="form-group"><label>PIN actual</label><input type="password" id="old-pin" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+          <div class="form-group"><label>PIN nuevo</label><input type="password" id="new-pin-change" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+          <div class="form-group"><label>Confirmar PIN nuevo</label><input type="password" id="new-pin-change2" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+          <div id="change-pin-error" style="font-size:12px;color:var(--red);margin-bottom:8px"></div>
+          <button class="btn btn-green btn-full" onclick="changePIN()">Guardar nuevo PIN</button>
+        </div>
+        <button class="btn btn-ghost btn-full" id="manage-users-btn" onclick="showPage('exportar');closeModal('perfil')">👥 Gestionar usuarios</button>
+      </div>
+      <button class="btn btn-red btn-full" onclick="logout()">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE — localStorage para persistencia
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// AUTH SYSTEM
+// ═══════════════════════════════════════
+let currentUser = null;
+let pinInput = '';
+let loginTarget = null;
+
+const ROLE_LABELS = { admin: '👑 Admin', vendedor: '🛒 Vendedor', viewer: '👁 Solo lectura' };
+const AVATAR_COLORS = ['linear-gradient(135deg,#d4a853,#f0c97a)','linear-gradient(135deg,#4caf82,#7eefc0)','linear-gradient(135deg,#5c8fe0,#8cb4f5)','linear-gradient(135deg,#e05c5c,#f59090)','linear-gradient(135deg,#a05ce0,#d090f5)'];
+
+function loadUsers() {
+  try { return JSON.parse(localStorage.getItem('trionexUsers') || 'null'); } catch(e) { return null; }
+}
+function saveUsers(users) {
+  try { localStorage.setItem('trionexUsers', JSON.stringify(users)); } catch(e) {}
+}
+
+function initAuth() {
+  let users = loadUsers();
+  // First run: create default admin
+  if (!users || !users.length) {
+    users = [{
+      id: 1, name: 'Cristhian', role: 'admin',
+      pin: hashPIN('1234'), color: 0, initials: 'C'
+    }];
+    saveUsers(users);
+  }
+
+  // Load logo into login screen
+  const logoWrap = document.getElementById('login-logo-wrap');
+  if (logoWrap) {
+    const saved = localStorage.getItem('trionexLogo');
+    if (saved) logoWrap.innerHTML = `<img src="${saved}" style="width:100%;height:100%;object-fit:cover">`;
+  }
+
+  // Check if already logged in this session
+  const session = sessionStorage.getItem('trionexSession');
+  if (session) {
+    try {
+      const u = JSON.parse(session);
+      currentUser = u;
+      showApp();
+      return;
+    } catch(e) {}
+  }
+  renderUserList(users);
+}
+
+function renderUserList(users) {
+  const list = document.getElementById('user-list');
+  if (!list) return;
+  list.innerHTML = users.map((u, i) => `
+    <div class="user-card" onclick="selectUser(${u.id})">
+      <div class="user-avatar" style="background:${AVATAR_COLORS[u.color % AVATAR_COLORS.length]}">${u.initials}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:15px">${u.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${ROLE_LABELS[u.role] || u.role}</div>
+      </div>
+      <span style="color:var(--muted);font-size:20px">›</span>
+    </div>`).join('');
+}
+
+function selectUser(id) {
+  const users = loadUsers();
+  const user = users.find(u => u.id === id);
+  if (!user) return;
+  loginTarget = user;
+  pinInput = '';
+  updatePinDots();
+  document.getElementById('pin-avatar').textContent = user.initials;
+  document.getElementById('pin-avatar').style.background = AVATAR_COLORS[user.color % AVATAR_COLORS.length];
+  document.getElementById('pin-username').textContent = user.name;
+  document.getElementById('pin-role').textContent = ROLE_LABELS[user.role] || user.role;
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('user-select-view').style.display = 'none';
+  document.getElementById('pin-view').style.display = 'block';
+  document.getElementById('create-user-view').style.display = 'none';
+}
+
+function pinKey(k) {
+  if (k === 'del') {
+    pinInput = pinInput.slice(0, -1);
+    updatePinDots();
+    return;
+  }
+  if (k === 'bio') {
+    // Touch ID / biometrics placeholder
+    toast('Biometría no disponible en este dispositivo', '');
+    return;
+  }
+  if (pinInput.length >= 4) return;
+  pinInput += k;
+  updatePinDots();
+  if (pinInput.length === 4) setTimeout(checkPIN, 120);
+}
+
+function updatePinDots() {
+  const dots = document.querySelectorAll('.pin-dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('filled', i < pinInput.length);
+    d.classList.remove('error');
+  });
+}
+
+function checkPIN() {
+  if (!loginTarget) return;
+  if (hashPIN(pinInput) === loginTarget.pin) {
+    currentUser = loginTarget;
+    sessionStorage.setItem('trionexSession', JSON.stringify(currentUser));
+    showApp();
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => { d.classList.add('error'); d.classList.remove('filled'); });
+    document.getElementById('pin-error').textContent = 'PIN incorrecto. Intenta de nuevo.';
+    pinInput = '';
+    setTimeout(() => {
+      document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+      document.getElementById('pin-error').textContent = '';
+    }, 1200);
+  }
+}
+
+function hashPIN(pin) {
+  // Simple hash - not cryptographic but good enough for local app
+  let h = 0;
+  const s = 'trionex_' + pin + '_salt2025';
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(36);
+}
+
+function showCreateUser() {
+  document.getElementById('user-select-view').style.display = 'none';
+  document.getElementById('pin-view').style.display = 'none';
+  document.getElementById('create-user-view').style.display = 'block';
+  document.getElementById('create-error').textContent = '';
+}
+
+function createUser() {
+  const name = document.getElementById('new-name').value.trim();
+  const role = document.getElementById('new-role').value;
+  const pin = document.getElementById('new-pin').value;
+  const pin2 = document.getElementById('new-pin2').value;
+  const errEl = document.getElementById('create-error');
+
+  if (!name) { errEl.textContent = 'Ingresa un nombre'; return; }
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { errEl.textContent = 'El PIN debe ser exactamente 4 dígitos'; return; }
+  if (pin !== pin2) { errEl.textContent = 'Los PINs no coinciden'; return; }
+
+  const users = loadUsers() || [];
+  const newUser = {
+    id: Date.now(), name, role,
+    pin: hashPIN(pin),
+    color: users.length % AVATAR_COLORS.length,
+    initials: name.charAt(0).toUpperCase()
+  };
+  users.push(newUser);
+  saveUsers(users);
+
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-pin').value = '';
+  document.getElementById('new-pin2').value = '';
+  backToUsers();
+  toast('Usuario creado ✅', 'success');
+}
+
+function backToUsers() {
+  loginTarget = null; pinInput = '';
+  document.getElementById('user-select-view').style.display = 'block';
+  document.getElementById('pin-view').style.display = 'none';
+  document.getElementById('create-user-view').style.display = 'none';
+  renderUserList(loadUsers() || []);
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  applyRole(currentUser.role);
+  // Update header avatar
+  const av = document.getElementById('header-avatar');
+  if (av) {
+    av.textContent = currentUser.initials;
+    av.style.background = AVATAR_COLORS[currentUser.color % AVATAR_COLORS.length].replace('linear-gradient(135deg,','').split(',')[0].replace(')','').trim();
+  }
+  // Pre-fill profile modal
+  const pAv = document.getElementById('profile-avatar-big');
+  if (pAv) {
+    pAv.textContent = currentUser.initials;
+    pAv.style.background = AVATAR_COLORS[currentUser.color % AVATAR_COLORS.length];
+  }
+  const pName = document.getElementById('profile-name');
+  if (pName) pName.textContent = currentUser.name;
+  const pRole = document.getElementById('profile-role');
+  if (pRole) pRole.textContent = ROLE_LABELS[currentUser.role] || currentUser.role;
+}
+
+function showChangePin() {
+  const wrap = document.getElementById('change-pin-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
+function changePIN() {
+  const oldPin = document.getElementById('old-pin').value;
+  const newPin = document.getElementById('new-pin-change').value;
+  const newPin2 = document.getElementById('new-pin-change2').value;
+  const errEl = document.getElementById('change-pin-error');
+  const users = loadUsers();
+  const user = users.find(u => u.id === currentUser.id);
+  if (!user) return;
+  if (hashPIN(oldPin) !== user.pin) { errEl.textContent = 'PIN actual incorrecto'; return; }
+  if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) { errEl.textContent = 'El nuevo PIN debe tener 4 dígitos'; return; }
+  if (newPin !== newPin2) { errEl.textContent = 'Los PINs no coinciden'; return; }
+  user.pin = hashPIN(newPin);
+  saveUsers(users);
+  document.getElementById('change-pin-wrap').style.display = 'none';
+  errEl.textContent = '';
+  toast('✅ PIN actualizado', 'success');
+}
+
+function applyRole(role) {
+  if (role === 'viewer') {
+    // Hide all write buttons for viewer
+    document.querySelectorAll('.btn-gold, .btn-green').forEach(b => {
+      if (b.textContent.includes('+') || b.textContent.includes('Guardar') || b.textContent.includes('Exportar')) return;
+      if (b.onclick && b.onclick.toString().includes('guardar')) b.style.display = 'none';
+    });
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('trionexSession');
+  currentUser = null;
+  pinInput = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  backToUsers();
+  closeModal('perfil');
+}
+
+function loadDB() {
+  try {
+    return JSON.parse(localStorage.getItem('trionexImportDB') || 'null') || {
+      inventario: [
+        {id:1, nombre:'Khamrah 100ml', cat:'Perfumes', barcode:'6291100130002', stock:12, stockMin:5, costo:90, precio:130, foto:''},
+        {id:2, nombre:'Arabian Night 50ml', cat:'Perfumes', barcode:'6291100130019', stock:8, stockMin:5, costo:65, precio:100, foto:''},
+        {id:3, nombre:'Bakhoor Al Oud', cat:'Perfumes', barcode:'6291100130026', stock:3, stockMin:5, costo:45, precio:75, foto:''},
+        {id:4, nombre:'iPhone 15 128GB', cat:'iPhones', barcode:'190199780033', stock:2, stockMin:1, costo:3200, precio:3800, foto:''},
+      ],
+      ventas: [], gastos: [], compras: [], pedidos: []
+    };
+  } catch(e) { return {inventario:[],ventas:[],gastos:[],compras:[],pedidos:[]}; }
+}
+function saveDB() {
+  try { localStorage.setItem('trionexImportDB', JSON.stringify(db)); } catch(e) {}
+}
+
+let db = loadDB();
+let pendingBarcodeField = null;
+let scannerActive = false;
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Hide app until logged in
+  document.getElementById('app').style.display = 'none';
+  initAuth();
+
+  const now = new Date();
+  document.getElementById('hDate').textContent =
+    now.toLocaleDateString('es-PE', {day:'numeric', month:'short'});
+
+  // Fecha actual en forms
+  document.querySelectorAll('input[type="date"]').forEach(el => {
+    el.value = now.toISOString().slice(0,10);
+  });
+
+  // Mes actual en reportes
+  document.getElementById('rep-mes').value = now.getMonth();
+
+  updateAll();
+  loadSBConfig();
+
+  // Modal swipe to close
+  document.querySelectorAll('.modal-wrap').forEach(wrap => {
+    wrap.addEventListener('click', e => { if(e.target === wrap) wrap.classList.remove('open'); });
+  });
+});
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name)?.classList.add('active');
+  document.getElementById('nav-' + name)?.classList.add('active');
+  document.getElementById('appContent').scrollTop = 0;
+  if (name === 'reportes') calcResultados();
+  if (name === 'inventario') renderInventario();
+  if (name === 'alertas') renderAlertas();
+  if (name === 'exportar') { loadSBConfig(); }
+}
+
+// ═══════════════════════════════════════
+// MODALES
+// ═══════════════════════════════════════
+function openModal(name) {
+  updateProductSelects();
+  document.getElementById('modal-' + name)?.classList.add('open');
+}
+function closeModal(name) {
+  document.getElementById('modal-' + name)?.classList.remove('open');
+}
+
+// ═══════════════════════════════════════
+// SCANNER
+// ═══════════════════════════════════════
+function openScanner(forField = null) {
+  pendingBarcodeField = forField;
+  document.getElementById('scanner-overlay').classList.add('open');
+  document.getElementById('scan-status').textContent = 'Apunta al código de barras del producto...';
+  document.getElementById('manual-barcode').value = '';
+  startQuagga();
+}
+
+function scanForProduct() {
+  pendingBarcodeField = 'p-barcode';
+  openScanner('p-barcode');
+}
+
+function closeScanner() {
+  document.getElementById('scanner-overlay').classList.remove('open');
+  stopQuagga();
+}
+
+function startQuagga() {
+  if (!window.Quagga) {
+    document.getElementById('scan-status').textContent = '⚠️ Cámara no disponible. Usa el campo manual.';
+    return;
+  }
+  const videoWrap = document.getElementById('scanner-video-wrap');
+  scannerActive = true;
+
+  Quagga.init({
+    inputStream: {
+      name: 'Live',
+      type: 'LiveStream',
+      target: videoWrap,
+      constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    },
+    decoder: {
+      readers: ['ean_reader','ean_8_reader','code_128_reader','code_39_reader','upc_reader','upc_e_reader']
+    },
+    locate: true
+  }, err => {
+    if (err) {
+      document.getElementById('scan-status').textContent = '⚠️ No se pudo acceder a la cámara. Escribe el código manualmente.';
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(result => {
+    if (!scannerActive) return;
+    const code = result.codeResult.code;
+    if (code) {
+      scannerActive = false;
+      handleBarcode(code);
+    }
+  });
+}
+
+function stopQuagga() {
+  scannerActive = false;
+  try { Quagga.stop(); } catch(e) {}
+}
+
+function handleBarcode(code) {
+  if (!code || code.trim() === '') return;
+  code = code.trim();
+
+  // Si hay un campo destino específico (modal producto)
+  if (pendingBarcodeField) {
+    document.getElementById(pendingBarcodeField).value = code;
+    closeScanner();
+    toast('Código escaneado: ' + code, 'success');
+    return;
+  }
+
+  // Buscar en inventario
+  const prod = db.inventario.find(p => p.barcode === code);
+  closeScanner();
+
+  if (prod) {
+    // Producto encontrado → pre-fill venta
+    updateProductSelects();
+    document.getElementById('v-prod').value = prod.nombre;
+    autoFillVenta();
+    openModal('venta');
+    toast('✅ ' + prod.nombre + ' — listo para vender', 'success');
+  } else {
+    // Producto no encontrado → abrir modal nuevo producto con barcode
+    document.getElementById('p-barcode').value = code;
+    openModal('producto');
+    toast('Producto nuevo. Completa los datos.', 'success');
+  }
+}
+
+// ═══════════════════════════════════════
+// FOTO PRODUCTO
+// ═══════════════════════════════════════
+let currentPhotoData = '';
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentPhotoData = e.target.result;
+    const preview = document.getElementById('prod-photo-preview');
+    const placeholder = document.getElementById('photo-placeholder');
+    preview.src = currentPhotoData;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════
+// GUARDAR REGISTROS
+// ═══════════════════════════════════════
+function guardarVenta() {
+  const prodName = document.getElementById('v-prod').value;
+  const precio = parseFloat(document.getElementById('v-precio').value) || 0;
+  const cant = parseInt(document.getElementById('v-cant').value) || 1;
+  const costo = parseFloat(document.getElementById('v-costo').value) || 0;
+
+  if (precio <= 0) { toast('Ingresa el precio de venta', 'error'); return; }
+
+  const venta = {
+    id: Date.now(),
+    fecha: new Date().toISOString().slice(0,10),
+    producto: prodName || 'Producto libre',
+    precio, cant, costo,
+    total: precio * cant,
+    ganancia: (precio - costo) * cant,
+    cliente: document.getElementById('v-cliente').value || 'Cliente',
+    canal: document.getElementById('v-canal').value,
+    pago: document.getElementById('v-pago').value,
+    estado: document.getElementById('v-estado').value,
+  };
+  db.ventas.unshift(venta);
+
+  // Descontar stock
+  const prod = db.inventario.find(p => p.nombre === prodName);
+  if (prod) prod.stock = Math.max(0, prod.stock - cant);
+
+  saveDB(); updateAll(); closeModal('venta');
+  resetForm(['v-cliente']); document.getElementById('v-cant').value = 1;
+  document.getElementById('v-calc').style.display = 'none';
+  toast('Venta registrada ✅', 'success');
+}
+
+function guardarGasto() {
+  const monto = parseFloat(document.getElementById('g-monto').value) || 0;
+  if (monto <= 0) { toast('Ingresa el monto', 'error'); return; }
+  db.gastos.unshift({
+    id: Date.now(),
+    fecha: document.getElementById('g-fecha').value,
+    desc: document.getElementById('g-desc').value || 'Sin descripción',
+    cat: document.getElementById('g-cat').value,
+    monto,
+    pago: document.getElementById('g-pago').value,
+    rec: document.getElementById('g-rec').value,
+  });
+  saveDB(); updateAll(); closeModal('gasto');
+  resetForm(['g-desc','g-monto']);
+  toast('Gasto registrado', 'success');
+}
+
+function guardarCompra() {
+  const costoUSD = parseFloat(document.getElementById('c-usd').value) || 0;
+  const cant = parseInt(document.getElementById('c-cant').value) || 1;
+  const tc = parseFloat(document.getElementById('c-tc').value) || 3.75;
+  const envio = parseFloat(document.getElementById('c-envio').value) || 0;
+  const total = (costoUSD * tc * cant) + envio;
+  const prodName = document.getElementById('c-prod').value;
+  const estado = document.getElementById('c-estado').value;
+
+  db.compras.unshift({
+    id: Date.now(),
+    fecha: document.getElementById('c-fecha').value,
+    proveedor: document.getElementById('c-prov').value,
+    producto: prodName,
+    costoUSD, cant, tc, envio, total,
+    unitFinal: total / cant,
+    estado,
+  });
+
+  if (estado === 'Recibido') {
+    const prod = db.inventario.find(p => p.nombre === prodName);
+    if (prod) prod.stock += cant;
+  }
+
+  saveDB(); updateAll(); closeModal('compra');
+  toast('Compra registrada', 'success');
+}
+
+function guardarProducto() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre del producto', 'error'); return; }
+
+  const prod = {
+    id: Date.now(),
+    nombre,
+    cat: document.getElementById('p-cat').value,
+    barcode: document.getElementById('p-barcode').value.trim(),
+    stock: parseInt(document.getElementById('p-stock').value) || 0,
+    stockMin: parseInt(document.getElementById('p-stockmin').value) || 5,
+    costo: parseFloat(document.getElementById('p-costo').value) || 0,
+    precio: parseFloat(document.getElementById('p-precio').value) || 0,
+    foto: currentPhotoData || '',
+  };
+  db.inventario.push(prod);
+  currentPhotoData = '';
+  document.getElementById('prod-photo-preview').style.display = 'none';
+  document.getElementById('photo-placeholder').style.display = '';
+
+  saveDB(); updateAll(); closeModal('producto');
+  resetForm(['p-nombre','p-barcode','p-stock','p-costo','p-precio']);
+  document.getElementById('p-stock').value = 0;
+  document.getElementById('p-stockmin').value = 5;
+  document.getElementById('p-margen-wrap').style.display = 'none';
+  toast('Producto agregado ✅', 'success');
+}
+
+function guardarPedido() {
+  db.pedidos.unshift({
+    id: Date.now(),
+    fecha: new Date().toISOString().slice(0,10),
+    cliente: document.getElementById('ped-cliente').value,
+    wa: document.getElementById('ped-wa').value,
+    producto: document.getElementById('ped-prod').value,
+    precio: parseFloat(document.getElementById('ped-precio').value) || 0,
+    anticipo: parseFloat(document.getElementById('ped-anticipo').value) || 0,
+    costo: parseFloat(document.getElementById('ped-costo').value) || 0,
+    entrega: document.getElementById('ped-entrega').value,
+    estado: document.getElementById('ped-estado').value,
+  });
+  saveDB(); closeModal('pedido');
+  toast('Pedido registrado ✅', 'success');
+}
+
+// ═══════════════════════════════════════
+// RENDERS
+// ═══════════════════════════════════════
+function updateAll() {
+  updateKPIs();
+  renderDashVentas();
+  renderInventario();
+  renderVentas();
+  renderChart();
+  checkAlertas();
+}
+
+function updateKPIs() {
+  const now = new Date();
+  const mes = now.getMonth(), anio = now.getFullYear();
+  const vMes = db.ventas.filter(v => { const d = new Date(v.fecha); return d.getMonth()===mes&&d.getFullYear()===anio; });
+  const gMes = db.gastos.filter(g => { const d = new Date(g.fecha); return d.getMonth()===mes&&d.getFullYear()===anio; });
+
+  const totalV = vMes.reduce((s,v) => s+v.total, 0);
+  const ganBruta = vMes.reduce((s,v) => s+v.ganancia, 0);
+  const totalG = gMes.reduce((s,g) => s+g.monto, 0);
+  const ganNeta = ganBruta - totalG;
+  const totalStock = db.inventario.reduce((s,p) => s+p.stock, 0);
+
+  set('kpi-ventas', 'S/ '+fmt(totalV));
+  set('kpi-ganancia', 'S/ '+fmt(ganNeta));
+  set('kpi-gastos', 'S/ '+fmt(totalG));
+  set('kpi-stock', totalStock);
+  document.getElementById('kpi-ganancia').style.color = ganNeta >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function renderDashVentas() {
+  const el = document.getElementById('dash-ventas');
+  const recents = db.ventas.slice(0,5);
+  if (!recents.length) { el.innerHTML = '<div class="empty" style="padding:20px 16px"><div class="icon">💸</div><p>Sin ventas aún.</p></div>'; return; }
+  el.innerHTML = recents.map(v => `
+    <div class="list-item" style="border-radius:0;border-left:none;border-right:none;border-top:none;background:transparent">
+      <div class="item-img">${catEmoji(v.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${v.producto}</div>
+        <div class="item-meta">${v.cliente} · ${v.canal} · ${v.fecha}</div>
+      </div>
+      <div class="item-right">
+        <div class="item-price">S/ ${fmt(v.total)}</div>
+        <div class="item-stock" style="color:${v.ganancia>=0?'var(--green)':'var(--red)'}">+S/ ${fmt(v.ganancia)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderInventario() {
+  const q = (document.getElementById('inv-search')?.value||'').toLowerCase();
+  const prods = db.inventario.filter(p => !q || p.nombre.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q));
+  const el = document.getElementById('inv-list');
+  if (!prods.length) { el.innerHTML = '<div class="empty"><div class="icon">📦</div><p>Sin productos encontrados.</p></div>'; return; }
+  el.innerHTML = prods.map(p => {
+    const margen = p.precio > 0 ? ((p.precio-p.costo)/p.precio*100).toFixed(0) : 0;
+    const stockClass = p.stock <= 0 ? 'b-red' : p.stock <= p.stockMin ? 'b-gold' : 'b-green';
+    return `
+    <div class="list-item" onclick="showDetalle(${p.id})">
+      <div class="item-img">${p.foto ? `<img src="${p.foto}">` : catEmoji(p.nombre)}</div>
+      <div class="item-info">
+        <div class="item-name">${p.nombre}</div>
+        <div class="item-meta"><span class="badge b-muted">${p.cat}</span> · Margen ${margen}%</div>
+        ${p.barcode ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">📊 ${p.barcode}</div>` : ''}
+      </div>
+      <div class="item-right">
+        <div class="item-price">S/ ${fmt(p.precio)}</div>
+        <div><span class="badge ${stockClass}">${p.stock} u.</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderVentas() {
+  const el = document.getElementById('ventas-list');
+  if (!db.ventas.length) { el.innerHTML = '<div class="empty"><div class="icon">💰</div><p>Sin ventas aún.</p></div>'; return; }
+  el.innerHTML = db.ventas.slice(0,50).map(v => `
+    <div class="list-item">
+      <div class="item-img">${catEmoji(v.producto)}</div>
+      <div class="item-info">
+        <div class="item-name">${v.producto}</div>
+        <div class="item-meta">${v.cliente} · <span class="badge b-blue">${v.canal}</span> · ${v.fecha}</div>
+      </div>
+      <div class="item-right">
+        <div class="item-price">S/ ${fmt(v.total)}</div>
+        <div class="item-stock" style="color:var(--green)">+S/ ${fmt(v.ganancia)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function showDetalle(id) {
+  const p = db.inventario.find(x => x.id === id);
+  if (!p) return;
+  const margen = p.precio > 0 ? ((p.precio-p.costo)/p.precio*100).toFixed(1) : 0;
+  const stockColor = p.stock <= 0 ? 'var(--red)' : p.stock <= p.stockMin ? 'var(--gold)' : 'var(--green)';
+  document.getElementById('detalle-body').innerHTML = `
+    ${p.foto ? `<img src="${p.foto}" style="width:100%;height:180px;object-fit:cover;border-radius:14px;margin-bottom:16px">` : `<div style="text-align:center;font-size:56px;margin-bottom:16px">${catEmoji(p.nombre)}</div>`}
+    <div style="font-family:var(--heading);font-size:22px;font-weight:800;margin-bottom:4px">${p.nombre}</div>
+    <div style="margin-bottom:16px"><span class="badge b-muted">${p.cat}</span>${p.barcode?` <span class="badge b-muted">📊 ${p.barcode}</span>`:''}</div>
+    <div class="calc-result">
+      <div class="row"><span>Costo unitario</span><span style="color:var(--red)">S/ ${fmt(p.costo)}</span></div>
+      <div class="row"><span>Precio de venta</span><span style="color:var(--gold)">S/ ${fmt(p.precio)}</span></div>
+      <div class="total-row"><span>Ganancia por unidad</span><span style="color:var(--green)">S/ ${fmt(p.precio-p.costo)} (${margen}%)</span></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:14px;color:var(--muted)">Stock actual</span>
+      <span style="font-family:var(--heading);font-size:28px;font-weight:800;color:${stockColor}">${p.stock}</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-gold" style="flex:1" onclick="quickSell(${p.id})">💰 Vender</button>
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('detalle')">Cerrar</button>
+    </div>`;
+  document.getElementById('modal-detalle').classList.add('open');
+}
+
+function quickSell(id) {
+  const p = db.inventario.find(x => x.id === id);
+  closeModal('detalle');
+  updateProductSelects();
+  document.getElementById('v-prod').value = p.nombre;
+  autoFillVenta();
+  openModal('venta');
+}
+
+// ═══════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════
+function renderChart() {
+  // Categorías
+  const now = new Date();
+  const vMes = db.ventas.filter(v => {
+    const d = new Date(v.fecha);
+    return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+  });
+  const cats = {};
+  vMes.forEach(v => {
+    const p = db.inventario.find(x => x.nombre===v.producto);
+    const cat = p ? p.cat : 'Otros';
+    cats[cat] = (cats[cat]||0) + v.total;
+  });
+  const catEl = document.getElementById('chart-cats');
+  if (!Object.keys(cats).length) {
+    catEl.innerHTML = '<div class="empty" style="padding:0"><p>Sin ventas este mes.</p></div>';
+  } else {
+    const max = Math.max(...Object.values(cats));
+    const colors = ['var(--gold)','var(--green)','var(--blue)','var(--red)'];
+    catEl.innerHTML = Object.entries(cats).map(([cat,val],i) => `
+      <div class="bar-col">
+        <div class="bar-val">S/${val>=1000?(val/1000).toFixed(1)+'k':Math.round(val)}</div>
+        <div class="bar-fill" style="height:${Math.max(8,(val/max)*90)}px;background:${colors[i%colors.length]}"></div>
+        <div class="bar-lbl">${cat}</div>
+      </div>`).join('');
+  }
+
+  // Últimos 6 meses
+  const meses6 = [];
+  for (let i=5; i>=0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const vs = db.ventas.filter(v => {
+      const dd = new Date(v.fecha);
+      return dd.getMonth()===d.getMonth()&&dd.getFullYear()===d.getFullYear();
+    });
+    meses6.push({
+      label: d.toLocaleDateString('es-PE',{month:'short'}),
+      val: vs.reduce((s,v) => s+v.total, 0)
+    });
+  }
+  const mesEl = document.getElementById('chart-meses');
+  if (mesEl) {
+    const maxM = Math.max(...meses6.map(m=>m.val), 1);
+    mesEl.innerHTML = meses6.map((m,i) => `
+      <div class="bar-col">
+        <div class="bar-val">${m.val>0?'S/'+Math.round(m.val):''}</div>
+        <div class="bar-fill" style="height:${Math.max(4,(m.val/maxM)*90)}px;background:${i===5?'var(--gold)':'var(--s3)'}"></div>
+        <div class="bar-lbl">${m.label}</div>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════
+// RESULTADOS & FLUJO
+// ═══════════════════════════════════════
+function calcResultados() {
+  const mes = parseInt(document.getElementById('rep-mes').value);
+  const anio = parseInt(document.getElementById('rep-anio').value);
+
+  const vMes = db.ventas.filter(v => {
+    const d = new Date(v.fecha);
+    return d.getMonth()===mes&&d.getFullYear()===anio;
+  });
+  const gMes = db.gastos.filter(g => {
+    const d = new Date(g.fecha);
+    return d.getMonth()===mes&&d.getFullYear()===anio;
+  });
+  const cMes = db.compras.filter(c => {
+    const d = new Date(c.fecha);
+    return d.getMonth()===mes&&d.getFullYear()===anio&&c.estado==='Recibido';
+  });
+
+  const ventasBrutas = vMes.reduce((s,v) => s+v.total, 0);
+  const cmv = vMes.reduce((s,v) => s+v.costo*v.cant, 0);
+  const utilBruta = ventasBrutas - cmv;
+  const totalGastos = gMes.reduce((s,g) => s+g.monto, 0);
+  const cuota = parseFloat(document.getElementById('cuota-banco')?.value) || 0;
+  const utilNeta = utilBruta - totalGastos;
+  const margen = ventasBrutas > 0 ? (utilNeta/ventasBrutas*100).toFixed(1) : 0;
+
+  const gCats = {};
+  gMes.forEach(g => { gCats[g.cat] = (gCats[g.cat]||0) + g.monto; });
+
+  const erRows = document.getElementById('er-rows');
+  erRows.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">INGRESOS</div>
+      ${erRow('Ventas brutas', ventasBrutas, 'gold')}
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">COSTO DE VENTAS</div>
+      ${erRow('Costo mercadería vendida', cmv, 'red', true)}
+      ${erRowSub('Utilidad Bruta', utilBruta, utilBruta>=0?'green':'red')}
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">GASTOS OPERATIVOS</div>
+      ${Object.entries(gCats).map(([cat,val]) => erRow(cat, val, 'red', true)).join('')}
+      ${erRowSub('Total Gastos', totalGastos, 'red')}
+    </div>`;
+
+  set('er-utilidad', 'S/ '+fmt(utilNeta));
+  document.getElementById('er-utilidad').style.color = utilNeta >= 0 ? 'var(--green)' : 'var(--red)';
+  set('er-margen', margen + '%');
+
+  // Flujo de caja
+  const cobros = vMes.filter(v=>v.estado==='Completada').reduce((s,v)=>s+v.total,0);
+  const proveedores = cMes.reduce((s,c)=>s+c.total,0);
+  const flujoNeto = cobros - totalGastos - proveedores - cuota;
+  const flujoEl = document.getElementById('flujo-rows');
+  if (flujoEl) {
+    flujoEl.innerHTML = `
+      ${erRow('Cobros de ventas', cobros, 'green')}
+      ${erRow('Pagos a proveedores', proveedores, 'red', true)}
+      ${erRow('Gastos operativos', totalGastos, 'red', true)}
+      ${erRow('Cuota banco/préstamo', cuota, 'red', true)}
+      <div class="divider"></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px">
+        <span>FLUJO NETO</span>
+        <span style="color:${flujoNeto>=0?'var(--green)':'var(--red)'}">S/ ${fmt(flujoNeto)}</span>
+      </div>`;
+  }
+
+  // Indicadores
+  const unids = vMes.reduce((s,v)=>s+v.cant,0);
+  const ticket = vMes.length > 0 ? ventasBrutas/vMes.length : 0;
+  const indicEl = document.getElementById('indicadores-body');
+  if (indicEl) {
+    indicEl.innerHTML = `
+      ${erRow('Transacciones', vMes.length + ' ventas', 'muted')}
+      ${erRow('Unidades vendidas', unids + ' u.', 'muted')}
+      ${erRow('Ticket promedio', 'S/ '+fmt(ticket), 'gold')}
+      ${erRow('Margen bruto', ventasBrutas>0?((utilBruta/ventasBrutas)*100).toFixed(1)+'%':'0%', 'green')}`;
+  }
+
+  renderChart();
+}
+
+function erRow(label, val, color, minus=false) {
+  const colorMap = {gold:'var(--gold)',green:'var(--green)',red:'var(--red)',blue:'var(--blue)',muted:'var(--muted)'};
+  const display = typeof val === 'number' ? `${minus?'-':''}S/ ${fmt(Math.abs(val))}` : val;
+  return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)">
+    <span style="color:var(--light)">${label}</span>
+    <span style="color:${colorMap[color]||'var(--text)'}">  ${display}</span>
+  </div>`;
+}
+function erRowSub(label, val, color) {
+  const colorMap = {gold:'var(--gold)',green:'var(--green)',red:'var(--red)'};
+  return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;font-weight:600">
+    <span>${label}</span>
+    <span style="color:${colorMap[color]||'var(--text)'}">S/ ${fmt(val)}</span>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// ALERTAS
+// ═══════════════════════════════════════
+function checkAlertas() {
+  const lowStock = db.inventario.filter(p => p.stock <= p.stockMin);
+  const dot = document.getElementById('notifDot');
+  dot.style.display = lowStock.length ? 'block' : 'none';
+}
+
+function renderAlertas() {
+  const el = document.getElementById('alertas-content');
+  const lowStock = db.inventario.filter(p => p.stock <= p.stockMin);
+
+  if (!lowStock.length) {
+    el.innerHTML = '<div class="empty"><div class="icon">✅</div><p>Todo el inventario en buen nivel.</p></div>';
+    return;
+  }
+
+  const waMsg = encodeURIComponent(
+    `🔔 *ALERTA STOCK BAJO — ${new Date().toLocaleDateString('es-PE')}*\n\n` +
+    lowStock.map(p => `• ${p.nombre}: ${p.stock} u. (mín: ${p.stockMin})`).join('\n') +
+    `\n\n_Trionex Import — Necesito reabastecer estos productos._`
+  );
+
+  el.innerHTML = `
+    <div class="alert-card">
+      <div class="alert-title">⚠️ ${lowStock.length} producto(s) con stock bajo</div>
+      ${lowStock.map(p => `
+        <div class="alert-item">
+          <span>${p.nombre}</span>
+          <span style="color:${p.stock<=0?'var(--red)':'var(--gold)'}">${p.stock<=0?'AGOTADO':p.stock+' u.'}</span>
+        </div>`).join('')}
+      <button class="wa-btn" onclick="window.open('https://wa.me/?text=${waMsg}','_blank')">
+        📲 Compartir lista por WhatsApp
+      </button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function autoFillVenta() {
+  const nombre = document.getElementById('v-prod').value;
+  const p = db.inventario.find(x => x.nombre===nombre);
+  if (p) {
+    document.getElementById('v-precio').value = p.precio;
+    document.getElementById('v-costo').value = p.costo;
+    calcVenta();
+  }
+}
+
+function calcVenta() {
+  const precio = parseFloat(document.getElementById('v-precio').value) || 0;
+  const costo = parseFloat(document.getElementById('v-costo').value) || 0;
+  const cant = parseInt(document.getElementById('v-cant').value) || 1;
+  const calc = document.getElementById('v-calc');
+  if (precio > 0) {
+    calc.style.display = 'block';
+    set('v-subtotal', 'S/ '+fmt(precio*cant));
+    set('v-costoT', 'S/ '+fmt(costo*cant));
+    set('v-gan', 'S/ '+fmt((precio-costo)*cant)+' ('+Math.round((precio-costo)/precio*100)+'%)');
+    document.getElementById('v-gan').style.color = (precio-costo) >= 0 ? 'var(--green)' : 'var(--red)';
+  } else { calc.style.display = 'none'; }
+}
+
+function calcCompra() {
+  const usd = parseFloat(document.getElementById('c-usd').value) || 0;
+  const cant = parseInt(document.getElementById('c-cant').value) || 1;
+  const tc = parseFloat(document.getElementById('c-tc').value) || 3.75;
+  const envio = parseFloat(document.getElementById('c-envio').value) || 0;
+  const soles = usd * tc * cant;
+  const total = soles + envio;
+  set('c-soles', 'S/ '+fmt(soles));
+  set('c-envio-s', 'S/ '+fmt(envio));
+  set('c-unit', 'S/ '+fmt(total/cant));
+}
+
+function calcMargen() {
+  const precio = parseFloat(document.getElementById('p-precio').value) || 0;
+  const costo = parseFloat(document.getElementById('p-costo').value) || 0;
+  const wrap = document.getElementById('p-margen-wrap');
+  if (precio > 0) {
+    wrap.style.display = 'block';
+    set('p-gan', 'S/ '+fmt(precio-costo));
+    set('p-margen', Math.round((precio-costo)/precio*100)+'%');
+  } else { wrap.style.display = 'none'; }
+}
+
+function updateProductSelects() {
+  ['v-prod','c-prod'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      db.inventario.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join('');
+    sel.value = cur;
+  });
+}
+
+function catEmoji(nombre) {
+  const n = (nombre||'').toLowerCase();
+  if (n.includes('iphone') || n.includes('phone')) return '📱';
+  if (n.includes('perfume')||n.includes('khamrah')||n.includes('arabian')||n.includes('oud')||n.includes('bakhoor')||n.includes('night')) return '🌹';
+  return '📦';
+}
+
+function fmt(n) {
+  if (typeof n !== 'number') return n;
+  return n.toLocaleString('es-PE', {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function resetForm(ids) {
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  setTimeout(() => el.className = '', 2500);
+}
+
+// ═══════════════════════════════════════
+// EXPORTAR A CSV / EXCEL
+// ═══════════════════════════════════════
+function exportSheet(type) {
+  const configs = {
+    ventas: {
+      data: db.ventas,
+      filename: 'Trionex_Ventas',
+      headers: ['ID','Fecha','Producto','Cantidad','Precio Venta','Costo Unit.','Total','Ganancia','Cliente','Canal','Pago','Estado'],
+      row: v => [v.id, v.fecha, v.producto, v.cant, v.precio, v.costo, v.total, v.ganancia, v.cliente, v.canal, v.pago, v.estado]
+    },
+    inventario: {
+      data: db.inventario,
+      filename: 'Trionex_Inventario',
+      headers: ['ID','Nombre','Categoría','Código Barras','Stock','Stock Mínimo','Costo (S/)','Precio Venta (S/)','Margen %'],
+      row: p => [p.id, p.nombre, p.cat, p.barcode||'', p.stock, p.stockMin, p.costo, p.precio, p.precio>0?Math.round((p.precio-p.costo)/p.precio*100)+'%':'0%']
+    },
+    gastos: {
+      data: db.gastos,
+      filename: 'Trionex_Gastos',
+      headers: ['ID','Fecha','Descripción','Categoría','Monto (S/)','Método Pago','Recurrente'],
+      row: g => [g.id, g.fecha, g.desc, g.cat, g.monto, g.pago, g.rec==='si'?'Sí':'No']
+    },
+    compras: {
+      data: db.compras,
+      filename: 'Trionex_Compras',
+      headers: ['ID','Fecha','Proveedor','Producto','Cant.','Costo USD','Tipo Cambio','Envío (S/)','Total (S/)','Costo Unit. Final','Estado'],
+      row: c => [c.id, c.fecha, c.proveedor, c.producto, c.cant, c.costoUSD, c.tc, c.envio, c.total.toFixed(2), c.unitFinal.toFixed(2), c.estado]
+    }
+  };
+
+  const cfg = configs[type];
+  if (!cfg || !cfg.data.length) { toast('Sin datos para exportar', 'error'); return; }
+
+  const now = new Date().toISOString().slice(0,10);
+  const rows = [cfg.headers, ...cfg.data.map(cfg.row)];
+  const csv = rows.map(r => r.map(cell => {
+    const s = String(cell ?? '').replace(/"/g, '""');
+    return s.includes(',') || s.includes('\n') ? `"${s}"` : s;
+  }).join(',')).join('\n');
+
+  // BOM para que Excel abra bien con tildes
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${cfg.filename}_${now}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`✅ ${cfg.filename} exportado`, 'success');
+}
+
+function exportTodo() {
+  const now = new Date().toISOString().slice(0,10);
+  // Exportar cada hoja en un solo archivo zip-like: múltiples CSVs concatenados con separador
+  const sections = ['ventas','inventario','gastos','compras'];
+  sections.forEach((s, i) => {
+    setTimeout(() => exportSheet(s), i * 400);
+  });
+  toast('📥 Exportando 4 archivos...', 'success');
+}
+
+// ═══════════════════════════════════════
+// BACKUP JSON
+// ═══════════════════════════════════════
+function exportBackup() {
+  const now = new Date().toISOString().slice(0,10);
+  const backup = {
+    version: '1.0',
+    empresa: 'Trionex Import',
+    fecha: now,
+    data: { ...db }
+  };
+  // Remove fotos from backup to keep file small (optional)
+  const backupClean = JSON.parse(JSON.stringify(backup));
+  backupClean.data.inventario = backupClean.data.inventario.map(p => ({...p, foto:''}));
+
+  const blob = new Blob([JSON.stringify(backupClean, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Trionex_Backup_${now}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Backup creado exitosamente', 'success');
+}
+
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.data || !backup.data.ventas) throw new Error('Formato inválido');
+      if (!confirm(`¿Restaurar backup del ${backup.fecha}?\n\nEsto reemplazará todos los datos actuales.`)) return;
+      db = backup.data;
+      saveDB();
+      updateAll();
+      toast('✅ Backup restaurado correctamente', 'success');
+      showPage('dashboard');
+    } catch(err) {
+      toast('❌ Archivo de backup inválido', 'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════
+// SUPABASE SYNC
+// ═══════════════════════════════════════
+let sbConfig = { url: '', key: '' };
+
+function saveSBConfig() {
+  sbConfig.url = document.getElementById('sb-url')?.value?.trim() || '';
+  sbConfig.key = document.getElementById('sb-key')?.value?.trim() || '';
+  try {
+    localStorage.setItem('trionexSBConfig', JSON.stringify(sbConfig));
+  } catch(e) {}
+  checkSyncPanel();
+}
+
+function loadSBConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('trionexSBConfig') || 'null');
+    if (saved) {
+      sbConfig = saved;
+      if (document.getElementById('sb-url')) document.getElementById('sb-url').value = sbConfig.url;
+      if (document.getElementById('sb-key')) document.getElementById('sb-key').value = sbConfig.key;
+    }
+  } catch(e) {}
+  checkSyncPanel();
+}
+
+function checkSyncPanel() {
+  const hasConfig = sbConfig.url && sbConfig.key;
+  const panel = document.getElementById('sync-panel');
+  const noMsg = document.getElementById('no-sync-msg');
+  if (panel) panel.style.display = hasConfig ? 'block' : 'none';
+  if (noMsg) noMsg.style.display = hasConfig ? 'none' : 'block';
+}
+
+async function testSupabase() {
+  if (!sbConfig.url || !sbConfig.key) { toast('Completa URL y Key primero', 'error'); return; }
+  toast('🔌 Probando conexión...', '');
+  try {
+    const res = await fetch(`${sbConfig.url}/rest/v1/inventario?select=id&limit=1`, {
+      headers: { 'apikey': sbConfig.key, 'Authorization': `Bearer ${sbConfig.key}` }
+    });
+    if (res.ok || res.status === 406) {
+      toast('✅ Conexión exitosa con Supabase', 'success');
+      checkSyncPanel();
+    } else {
+      toast('❌ Error: verifica tu URL y Key', 'error');
+    }
+  } catch(e) {
+    toast('❌ No se pudo conectar. Verifica la URL.', 'error');
+  }
+}
+
+async function syncToCloud() {
+  if (!sbConfig.url || !sbConfig.key) { toast('Configura Supabase primero', 'error'); return; }
+  toast('☁️ Subiendo datos...', '');
+
+  const tables = ['ventas','inventario','gastos','compras','pedidos'];
+  let ok = true;
+
+  for (const table of tables) {
+    const items = db[table] || [];
+    if (!items.length) continue;
+    try {
+      // Upsert all records
+      const payload = items.map(item => ({
+        id: item.id,
+        data: JSON.stringify(item)
+      }));
+      const res = await fetch(`${sbConfig.url}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: {
+          'apikey': sbConfig.key,
+          'Authorization': `Bearer ${sbConfig.key}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok && res.status !== 201) ok = false;
+    } catch(e) { ok = false; }
+  }
+
+  const now = new Date().toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'});
+  if (ok) {
+    set('sync-status', '✅ Subido a las ' + now);
+    toast('✅ Datos sincronizados en la nube', 'success');
+  } else {
+    toast('⚠️ Algunos datos no se pudieron subir', 'error');
+  }
+}
+
+async function syncFromCloud() {
+  if (!sbConfig.url || !sbConfig.key) { toast('Configura Supabase primero', 'error'); return; }
+  if (!confirm('¿Descargar datos desde la nube?\n\nReemplazará los datos locales con los de la nube.')) return;
+  toast('⬇️ Descargando...', '');
+
+  const tables = ['ventas','inventario','gastos','compras','pedidos'];
+  let ok = true;
+
+  for (const table of tables) {
+    try {
+      const res = await fetch(`${sbConfig.url}/rest/v1/${table}?select=data&order=id`, {
+        headers: { 'apikey': sbConfig.key, 'Authorization': `Bearer ${sbConfig.key}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        db[table] = rows.map(r => {
+          try { return typeof r.data === 'string' ? JSON.parse(r.data) : r.data; }
+          catch(e) { return r.data; }
+        });
+      } else { ok = false; }
+    } catch(e) { ok = false; }
+  }
+
+  if (ok) {
+    saveDB(); updateAll();
+    const now = new Date().toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'});
+    set('sync-status', '⬇️ Descargado a las ' + now);
+    toast('✅ Datos descargados desde la nube', 'success');
+    showPage('dashboard');
+  } else {
+    toast('⚠️ No se pudo descargar. Verifica conexión.', 'error');
+  }
+}
+
+// ═══════════════════════════════════════
+// SETUP STEPS TOGGLE
+// ═══════════════════════════════════════
+function toggleStep(n) {
+  const body = document.getElementById('step-' + n);
+  const arrow = body?.previousElementSibling?.querySelector('.step-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'flex';
+  if (arrow) arrow.classList.toggle('open', !isOpen);
+}
+
+function copySQL() {
+  const sql = document.getElementById('sql-code')?.textContent || '';
+  navigator.clipboard?.writeText(sql).then(() => toast('📋 SQL copiado', 'success'))
+    .catch(() => toast('Selecciona el texto manualmente', 'error'));
+}
+</script>
+</body>
+</html>
