@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Trionex">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Trionex Import v8</title>
+<title>Trionex Import v9</title>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -816,6 +816,19 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
     <div class="modal-header"><div class="modal-title" id="producto-modal-title">📦 Agregar Producto</div></div>
     <div class="modal-body">
       <input type="hidden" id="p-id">
+      
+      <div style="display:flex; gap:12px; margin-bottom:16px;">
+        <div id="p-foto-preview" style="width:72px; height:72px; border-radius:8px; background:var(--card); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:24px;" onclick="document.getElementById('p-foto-input').click()">
+          📷
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:12px; font-weight:600; margin-bottom:4px;">Foto del producto</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Toma una foto o sube un archivo</div>
+          <button class="btn btn-secondary btn-sm" style="width:fit-content" onclick="document.getElementById('p-foto-input').click()">Seleccionar imagen</button>
+          <input type="file" id="p-foto-input" accept="image/*" capture="environment" style="display:none" onchange="handleFotoUpload(event)">
+          <input type="hidden" id="p-foto-base64">
+        </div>
+      </div>
       <div class="form-group">
         <label>Nombre</label>
         <input type="text" id="p-nombre" placeholder="Ej: Khamrah 100ml">
@@ -969,6 +982,37 @@ function haptic(type = 'light') {
     success: [10, 50, 10], error: [20, 100, 20]
   };
   window.navigator.vibrate(patterns[type] || patterns.light);
+}
+
+// LOGIC FOTO
+function handleFotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Comprimir la imagen usando Canvas para no saturar Supabase
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 200; // Tamaño pequeño pero suficiente para iconos
+      const scaleSize = MAX_WIDTH / img.width;
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scaleSize;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Convertir a base64 comprimido
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      
+      // Actualizar UI
+      document.getElementById('p-foto-base64').value = dataUrl;
+      document.getElementById('p-foto-preview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    }
+    img.src = e.target.result;
+  }
+  reader.readAsDataURL(file);
 }
 
 // AUTH
@@ -1222,6 +1266,12 @@ function openModal(name) {
     document.getElementById('p-precio-3ml').value = '';
     document.getElementById('p-precio-5ml').value = '';
     document.getElementById('p-precio-10ml').value = '';
+    
+    // Reset foto preview
+    document.getElementById('p-foto-base64').value = '';
+    document.getElementById('p-foto-preview').innerHTML = '📷';
+    document.getElementById('p-foto-input').value = '';
+    
     toggleDecantsFields();
   }
   document.getElementById('modal-' + name)?.classList.add('open');
@@ -1488,6 +1538,8 @@ function guardarProducto() {
   const id = document.getElementById('p-id').value;
   const nombre = document.getElementById('p-nombre').value.trim();
   const cat = document.getElementById('p-cat').value;
+  const foto = document.getElementById('p-foto-base64').value; // Nueva variable foto
+  
   if (!nombre) { haptic('error'); toast('Ingresa el nombre','error'); return; }
   
   if (id) {
@@ -1497,6 +1549,7 @@ function guardarProducto() {
       prod.nombre = nombre;
       prod.cat = cat;
       prod.barcode = document.getElementById('p-barcode').value.trim();
+      prod.foto = foto; // Guarda la foto en producto existente
       
       if (cat === 'Decants de Perfumes') {
         // Guardar datos de decants
@@ -1509,7 +1562,7 @@ function guardarProducto() {
           precio5ml: parseFloat(document.getElementById('p-precio-5ml').value) || 0,
           precio10ml: parseFloat(document.getElementById('p-precio-10ml').value) || 0
         };
-        prod.stock = 0; // Decants no tienen stock
+        prod.stock = 0; 
         prod.costo = 0;
         prod.precio = 0;
       } else {
@@ -1526,7 +1579,7 @@ function guardarProducto() {
     const prod = {
       id: Date.now(), nombre, cat,
       barcode: document.getElementById('p-barcode').value.trim(),
-      stockMin: 5, foto: ''
+      stockMin: 5, foto: foto // Asigna foto a nuevo producto
     };
     
     if (cat === 'Decants de Perfumes') {
@@ -1592,6 +1645,15 @@ function editarProducto(id) {
     document.getElementById('p-nombre').value = prod.nombre;
     document.getElementById('p-barcode').value = prod.barcode || '';
     document.getElementById('p-cat').value = prod.cat;
+    
+    // Cargar foto si existe
+    if (prod.foto) {
+      document.getElementById('p-foto-base64').value = prod.foto;
+      document.getElementById('p-foto-preview').innerHTML = `<img src="${prod.foto}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      document.getElementById('p-foto-base64').value = '';
+      document.getElementById('p-foto-preview').innerHTML = '📷';
+    }
     
     // Si es decant
     if (prod.cat === 'Decants de Perfumes' && prod.decants) {
@@ -1764,9 +1826,11 @@ function renderDashVentas() {
   if (!recents.length) { el.innerHTML = '<div class="empty" style="padding:20px 12px"><div class="icon">💸</div><p>Sin ventas aún</p></div>'; return; }
   el.innerHTML = recents.map(v => {
     const estadoBadge = v.estado === 'Completada' ? 'badge-success' : v.estado === 'Pendiente' ? 'badge-warning' : 'badge-danger';
+    const p = db.inventario.find(x => x.nombre === v.producto || (v.producto && v.producto.startsWith(x.nombre)));
+    const imgHtml = (p && p.foto) ? `<img src="${p.foto}">` : catEmoji(v.producto);
     return `
     <div class="list-item" onclick="mostrarDetalleVenta(${v.id})" style="border:none;background:transparent;padding:10px 12px">
-      <div class="item-img">${catEmoji(v.producto)}</div>
+      <div class="item-img">${imgHtml}</div>
       <div class="item-info">
         <div class="item-name">${v.producto}</div>
         <div class="item-meta">${v.cliente} · <span class="badge ${estadoBadge}">${v.estado}</span></div>
@@ -1896,9 +1960,11 @@ function renderVentas() {
   
   el.innerHTML = ventas.map(v => {
     const estadoBadge = v.estado === 'Completada' ? 'badge-success' : v.estado === 'Pendiente' ? 'badge-warning' : 'badge-danger';
+    const p = db.inventario.find(x => x.nombre === v.producto || (v.producto && v.producto.startsWith(x.nombre)));
+    const imgHtml = (p && p.foto) ? `<img src="${p.foto}">` : catEmoji(v.producto);
     return `
     <div class="list-item" onclick="mostrarDetalleVenta(${v.id})">
-      <div class="item-img">${catEmoji(v.producto)}</div>
+      <div class="item-img">${imgHtml}</div>
       <div class="item-info">
         <div class="item-name">${v.producto}</div>
         <div class="item-meta">${v.cliente} · ${v.fecha} · <span class="badge ${estadoBadge}">${v.estado}</span></div>
